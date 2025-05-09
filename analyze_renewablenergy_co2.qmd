@@ -1,0 +1,215 @@
+---
+title: "How Renewable Energy Shapes Carbon Outcomes"
+subtitle: "EDS 213: Database and Data Management Final Project"
+author: "Karol Paya"
+date: 2025-05-09
+format:
+  html:
+    embed-resources: true
+editor_options: 
+  chunk_output_type: console
+---
+
+# Background
+
+## Carbon Dioxide (CO2) From Energy
+
+The CO₂ data used in this project was obtained from the Statistical Review of World Energy Data published by the Energy Institute. These emissions are derived from energy consumption and are categorized by fuel type and country. The dataset provides valuable insights for tracking global and regional trends in energy-related carbon emissions over time.
+
+Link: https://www.energyinst.org/statistical-review/resources-and-data-downloads
+
+Date Accessed: April 15, 2025
+
+## Renewable Energy Consumption 
+
+This dataset was obtained from World Bank Group as part of the Sustainable Energy for All database.
+This dataset includes country-level historical data on: access to electricity, access to non-solid fuels and share of renewable energy in total final energy consumption by technology
+
+Link: https://databank.worldbank.org/source/ida-results-measurement-system,-tier-i-database-%E2%80%93-wdi/Series/EG.ELC.ACCS.ZS
+
+Date Accessed: April 15, 2025
+
+**Load libraries **
+
+<details>
+
+<summary>Click to view code</summary>
+```{r eval = TRUE, echo = TRUE, warning=FALSE, message=FALSE}
+# Load libraries
+
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(readr)
+library(janitor)
+library(tidyverse)
+library(ggplot2)
+library(duckdb)
+```
+</details>
+
+**Load Data**
+
+<details>
+
+<summary>Click to view code</summary>
+```{r eval = TRUE, echo = TRUE, warning=FALSE, message=FALSE}
+# Load CO2 data
+co2_raw <- read_excel("data/Statistical Review of World Energy Data.xlsx", sheet = "Carbon Dioxide from Energy", skip = 2)
+
+# Read renewable energy data
+energy<-read.csv("data/world_bank_group_sustainable_energy_for_all.csv")
+```
+</details>
+
+# Data Cleaning
+
+
+## Clean energy dataset
+<details>
+
+<summary>Click to view code</summary>
+```{r eval = TRUE, echo = TRUE, warning=FALSE, message=FALSE}
+# Clean column names
+energy <- energy %>%
+  clean_names() 
+
+# Rename the first column to 'Country', to match CO2 dataset's column names
+colnames(energy)[1] <- "country"
+colnames(energy)[3] <- "year"
+
+# Select relevant columns
+energy_clean <- energy %>%
+  select(country, year, renewable_energy_consumption_tj)
+```
+
+```{r eval = TRUE, echo = TRUE, warning=FALSE, message=FALSE}
+# Remove missing values in the renewable_energy_consumption_tj column
+energy_clean <- energy_clean %>%
+  drop_na(renewable_energy_consumption_tj) %>%
+
+# Remove the row where any column contains "Last Updated:" or "Data from database: Sustainable Energy for All"
+  filter(
+    if_all(everything(), ~ !str_detect(.x, "Last Updated:|Data from database: Sustainable Energy for All"))
+  ) # This is generic, any future updates will be captured
+
+# Look for non-numeric values
+energy_clean %>%
+  filter(is.na(as.numeric(renewable_energy_consumption_tj))) %>%
+  distinct(renewable_energy_consumption_tj)
+
+# Replace ".." with NA
+energy_clean <- energy_clean %>%
+  filter(if_all(everything(), ~ .x != ".."))
+```
+</details>
+
+## Clean co2_raw dataset
+
+<details>
+
+<summary>Click to view code</summary>
+```{r eval = TRUE, echo = TRUE, warning=FALSE, message=FALSE}
+#drop na in the first column
+co2_raw <- co2_raw %>% 
+  filter(!is.na(`Million tonnes of carbon dioxide`))
+
+# Rename the first column to 'Country'
+colnames(co2_raw)[1] <- "country"
+
+# Select 'country' column and year columns 2010–2016 (to match renewable energy dates)
+co2_raw <- co2_raw %>%
+  select(country,  `2010`:`2016`)  
+
+# Pivot the data to long format
+ co2_raw<- co2_raw %>%
+  pivot_longer(cols = -country,  # Exclude the 'country' column, pivot the rest
+               names_to = "year", 
+               values_to = "co2_emissions_mt")
+
+ # Select countries
+co2_data <- co2_raw %>%
+  filter(country %in% c("Norway", "Germany", "US", "China", "India", "Brazil", "Saudi Arabia", "Denmark", "South Africa", "Australia"))%>%
+  mutate(country = if_else(country == "US", "United States", country)) # rename US to united states
+  
+```
+</details>
+
+**Export Cleaned Dataframe **
+
+<details>
+
+<summary>Click to view code</summary>
+```{r eval = TRUE, echo = TRUE, warning=FALSE, message=FALSE}
+# Turn the table to a csv file
+write_csv(co2_data, file.path("data/processed/", "co2_clean.csv"))
+write_csv(energy_clean, file.path("data/processed/", "energy_clean.csv"))
+```
+</details>
+
+**Next steps: **
+
+1. Run `create_database.sql`: 
+Upload the cleaned CSV files to your SQL environment and execute this script to merge datasets and create database.
+
+2. Run `query_energy.sql`: 
+Use this script to query, clean, and transform the data from the merged database for analysis.
+
+3. Generate visualizations: 
+Use the provided code below to create visualizations based on the transformed dataset.
+
+# Data Visualization
+
+<details>
+
+<summary>Click to view code</summary>
+```{r eval = TRUE, echo = TRUE, warning=FALSE, message=FALSE}
+# Load filtered data
+
+# Connect to database
+con <- dbConnect(duckdb::duckdb(), dbdir = "energy_database.db")
+
+# List available tables
+dbListTables(con)
+
+# Read table from db into R 
+energy_table_filter <- dbReadTable(con, "energy_table_filter")
+```
+
+```{r eval = TRUE, echo = TRUE, warning=FALSE, message=FALSE}
+# Take average of the three years (2013-2015)
+energy_avg <- energy_table_filter %>%
+  group_by(country) %>%
+  summarise(
+    avg_renewable = mean(renewable_energy_consumption_tj, na.rm = TRUE),
+    avg_co2 = mean(co2_emissions_mt, na.rm = TRUE),
+    avg_ratio = mean(renewable_per_co2, na.rm = TRUE)
+  )
+
+# Create scatter plot: Average Renewable Energy Consumption vs CO2 Emissions
+plot_energy<-ggplot(energy_avg, aes(x = avg_renewable, y = avg_co2, label = country, color = country)) +
+  geom_point(size = 5) +
+  geom_text(vjust = -1, hjust = 0.5, size = 5) +
+  theme_minimal() +
+  labs(
+    title = "Average Renewable Energy vs. CO2 Emissions (2013–2015)",
+    x = "Average Renewable Energy Consumption (TJ)",
+    y = "Average CO2 Emissions (Mt)"
+  ) +
+  theme(legend.position = "none") 
+```
+</details>
+
+```{r}
+plot_energy
+```
+
+Disconnect DB
+<details>
+
+<summary>Click to view code</summary>
+
+```{r eval = TRUE, echo = TRUE, warning=FALSE, message=FALSE}
+# Disconnect db
+dbDisconnect(con)
+```
