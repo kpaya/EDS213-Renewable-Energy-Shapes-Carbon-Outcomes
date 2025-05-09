@@ -16,7 +16,7 @@ This repository was developed as the final project for **EDS 213: Database and D
 
 -   Combine data from multiple sources to form a SQL database.
 
--   Develop SQL queries and visualizations that highlight regiona differences in emissions and renewable energy consumption.
+-   Develop SQL queries and visualizations that highlight regional differences in emissions and renewable energy consumption.
 
 ## Repository Structure
 
