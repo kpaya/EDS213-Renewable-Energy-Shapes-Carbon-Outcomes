@@ -23,7 +23,6 @@ This repository was developed as the final project for **EDS 213: Database and D
 Below is an overview of the repository contents used to perform the analysis:
 
 ```{=html}
-<pre>
 ├── data/                     # Folder containing raw and processed data
 │   ├── processed/            # Folder containing cleaned datasets
 ├── create_database.sql       # SQL script to upload CSVs and create the SQL database
@@ -32,7 +31,6 @@ Below is an overview of the repository contents used to perform the analysis:
 ├── analyze_renewable_energy_co2.qmd  # Quarto notebook for analysis and to generate plots
 ├── README.md                 # Project overview and documentation
 └── .gitignore                # Git ignore file for temporary/system files
-</pre>
 ```
 
 ## About the data
