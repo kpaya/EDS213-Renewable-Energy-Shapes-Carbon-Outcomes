@@ -59,7 +59,7 @@ The raw datasets used in this project are stored in the `data/` folder. To explo
 
 -   **World Bank.** (2025). *Sustainable Energy for All Database*. <https://databank.worldbank.org/source/ida-results-measurement-system,-tier-i-database-%E2%80%93-wdi/Series/EG.ELC.ACCS.ZS> (Accessed April 15, 2025)
 
--   [EDS 213: Database and Data Management](https://ucsb-library-research-data-services.github.io/bren-eds213/), **Bren School of Environmental Science & Management - UCSB**
+-   **Bren School of Environmental Science & Management - UCSB**, [EDS 213: Database and Data Management](https://ucsb-library-research-data-services.github.io/bren-eds213/),
 
     **Special thanks to:**
 
