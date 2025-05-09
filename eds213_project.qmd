@@ -1,0 +1,141 @@
+---
+title: "EDS213: Final Project"
+format: html
+output: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+# Load necessary libraries
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(readr)
+library(janitor)
+library(tidyverse)
+library(ggplot2)
+library(duckdb)
+```
+
+**Data Cleaning**
+
+```{r}
+# Read renewable energy, find 'Carbon Dioxide from Energy' sheet
+co2_raw <- read_excel("data/Statistical Review of World Energy Data.xlsx", sheet = "Carbon Dioxide from Energy", skip = 2)
+
+# Read energy data
+energy<-read.csv("data/world_bank_group_sustainable_energy_for_all.csv")
+```
+
+## Cleaning energy dataset
+```{r}
+# Clean column names
+energy <- energy %>%
+  clean_names() 
+
+# Rename the first column to 'Country'
+colnames(energy)[1] <- "country"
+colnames(energy)[3] <- "year"
+
+# Select only the relevant columns
+energy_clean <- energy %>%
+  select(country, year, renewable_energy_consumption_tj)
+```
+
+```{r}
+energy_clean <- energy_clean %>%
+  drop_na(renewable_energy_consumption_tj) %>%
+
+# Remove rows containing either of the unwanted strings
+  filter(
+    if_all(everything(), ~ !str_detect(.x, "Last Updated: 06/30/2018|Data from database: Sustainable Energy for All"))
+  )
+
+# Look for non-numeric values
+energy_clean %>%
+  filter(is.na(as.numeric(renewable_energy_consumption_tj))) %>%
+  distinct(renewable_energy_consumption_tj)
+
+# Replace ".." with NA
+energy_clean <- energy_clean %>%
+  filter(if_all(everything(), ~ .x != ".."))
+```
+
+## Clean co2_raw dataset
+```{r}
+#drop na in the first column
+co2_raw <- co2_raw %>% 
+  filter(!is.na(`Million tonnes of carbon dioxide`))
+
+# Rename the first column to 'Country'
+colnames(co2_raw)[1] <- "country"
+
+# Select 'country' column and year columns 2010–2016 (to match renewable energy dates)
+co2_raw <- co2_raw %>%
+  select(country,  `2010`:`2016`)  
+
+# Pivot the data to long format
+ co2_raw<- co2_raw %>%
+  pivot_longer(cols = -country,  # Exclude the 'country' column, pivot the rest
+               names_to = "year", 
+               values_to = "co2_emissions_mt")
+
+ # Select countries
+co2_data <- co2_raw %>%
+  filter(country %in% c("Norway", "Germany", "US", "China", "India", "Brazil", "Saudi Arabia", "Denmark", "South Africa", "Australia"))%>%
+  mutate(country = if_else(country == "US", "United States", country)) # rename US to united states
+  
+```
+
+## Export new dataframes
+
+```{r}
+# Turn the table to a csv file
+write_csv(co2_data, file.path("data/processed/", "co2_clean.csv"))
+write_csv(energy_clean, file.path("data/processed/", "energy_clean.csv"))
+```
+
+**Data Visualization**
+
+```{r}
+# Load filtered data
+# Connect to database
+con <- dbConnect(duckdb::duckdb(), dbdir = "energy_database.db")
+
+# List available tables
+dbListTables(con)
+
+# Read table from db into R 
+energy_table_filter <- dbReadTable(con, "energy_table_filter")
+```
+
+```{r}
+# Take average of the three years (2013-2015)
+energy_avg <- energy_table_filter %>%
+  group_by(country) %>%
+  summarise(
+    avg_renewable = mean(renewable_energy_consumption_tj, na.rm = TRUE),
+    avg_co2 = mean(co2_emissions_mt, na.rm = TRUE),
+    avg_ratio = mean(renewable_per_co2, na.rm = TRUE)
+  )
+
+# Create scatter plot: Average Renewable Energy Consumption vs CO2 Emissions
+ggplot(energy_avg, aes(x = avg_renewable, y = avg_co2, label = country, color = country)) +
+  geom_point(size = 5) +
+  geom_text(vjust = -1, hjust = 0.5, size = 5) +
+  theme_minimal() +
+  labs(
+    title = "Average Renewable Energy vs. CO2 Emissions (2013–2015)",
+    x = "Average Renewable Energy Consumption (TJ)",
+    y = "Average CO2 Emissions (Mt)"
+  ) +
+  theme(legend.position = "none") 
+```
+
+```{r}
+# Disconnect (when done)
+dbDisconnect(con)
+```
+
