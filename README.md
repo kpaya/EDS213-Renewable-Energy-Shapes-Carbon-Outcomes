@@ -53,6 +53,7 @@ The raw datasets used in this project are stored in the `data/` folder. To explo
 
 -   **Renewable Energy Consumption**: [World Bank SE4ALL Database](https://databank.worldbank.org/source/ida-results-measurement-system,-tier-i-database-%E2%80%93-wdi/Series/EG.ELC.ACCS.ZS)
 
+## Environment Dependencies
 For details on required dependencies and environment setup, please refer to the `Environment_Dependencies.rtf` file.
 
 ## References & Acknowledgements
