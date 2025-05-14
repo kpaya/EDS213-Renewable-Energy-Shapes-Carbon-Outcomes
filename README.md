@@ -30,6 +30,7 @@ Below is an overview of the repository contents used to perform the analysis:
 ├── energy_database.db        # Generated database containing merged tables
 ├── analyze_renewable_energy_co2.qmd  # Quarto notebook for analysis and to generate plots
 ├── README.md                 # Project overview and documentation
+├── Environment_Dependencies.rtf # Text file containing dependecies & env. requirements
 └── .gitignore                # Git ignore file for temporary/system files
 ```
 
@@ -50,6 +51,8 @@ The raw datasets used in this project are stored in the `data/` folder. To explo
 -   **CO₂ from Energy**: [Energy Institute Statistical Review](https://www.energyinst.org/statistical-review/resources-and-data-downloads)
 
 -   **Renewable Energy Consumption**: [World Bank SE4ALL Database](https://databank.worldbank.org/source/ida-results-measurement-system,-tier-i-database-%E2%80%93-wdi/Series/EG.ELC.ACCS.ZS)
+
+For details on required dependencies and environment setup, please refer to the `Environment_Dependencies.rtf` file.
 
 ## References & Acknowledgements
 
