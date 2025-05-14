@@ -9,6 +9,7 @@ The analysis integrates multiple data sources into a single SQL database, enabli
 This repository was developed as the final project for **EDS 213: Database and Data Management**.
 
 ![Photo credit: piyaset / Getty Images](https://www.investopedia.com/thmb/7gfCixGE40_BlpBi2GqN1HTi51Q=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/GettyImages-2174080781-508c0aae85a94ae6a7c4f9c303eae4f1.jpg)
+Photo credit: piyaset / Getty Images
 
 ## Purpose
 
